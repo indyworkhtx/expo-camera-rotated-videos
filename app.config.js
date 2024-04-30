@@ -61,7 +61,6 @@ export default {
   orientation: 'portrait',
   splash: {
     backgroundColor: '#EC008C',
-    image: `./themes/pole_position/assets/splash_2022${notProduction ? `_${ENVIRONMENT}` : ''}.png`,
     resizeMode: 'cover',
   },
   platforms: ['ios', 'android'],
