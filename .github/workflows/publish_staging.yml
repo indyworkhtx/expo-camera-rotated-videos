@@ -1,0 +1,94 @@
+name: Publish to Expo Staging Channel
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-staging'
+
+env:
+  ENVIRONMENT: staging
+  NODE_ENV: development
+
+jobs:
+  build-ios:
+    name: Build iOS App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "You must provide an EXPO_TOKEN secret linked to this project's Expo account in this repo's secrets. Learn more: https://docs.expo.dev/eas-update/github-actions"
+            exit 1
+          fi
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v3
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.19.0
+          cache: yarn
+
+      - uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: jq moreutils
+          version: apt-pkgs
+
+      - name: 🏗 Setup Expo
+        uses: expo/expo-github-action@v7
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📦 Install dependencies
+        run: yarn install
+
+      - name: 🚀 Build app
+        run: eas build --profile staging --platform ios --non-interactive --json > build.json
+
+      - name: Fetch data from json file
+        id: buildUrls
+        run: |
+          echo "::set-output name=IOS_BUILD_ID::$(jq '.[0].id' build.json -r)"
+  build-android:
+    name: Build Android App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "You must provide an EXPO_TOKEN secret linked to this project's Expo account in this repo's secrets. Learn more: https://docs.expo.dev/eas-update/github-actions"
+            exit 1
+          fi
+      - name: 🏗 Setup repo
+        uses: actions/checkout@v3
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.19.0
+          cache: yarn
+
+      - uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: jq moreutils
+          version: apt-pkgs
+
+      - name: 🏗 Setup Expo
+        uses: expo/expo-github-action@v7
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 📦 Install dependencies
+        run: yarn install
+
+      - name: 🚀 Build app
+        run: eas build --profile staging --platform android --non-interactive --json > build.json
+
+      - name: Fetch data from json file
+        id: buildUrls
+        run: |
+          echo "::set-output name=ANDROID_BUILD_ID::$(jq '.[0].id' build.json -r)"
