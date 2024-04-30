@@ -74,20 +74,6 @@ export default {
         microphonePermission: 'Allow Expo Camera to access your microphone.',
       },
     ],
-    [
-      'expo-image-picker',
-      {
-        photosPermission: 'The app accesses your photos to let you share them with your friends.',
-      },
-    ],
-    [
-      'expo-media-library',
-      {
-        photosPermission: 'Allow Expo Camera to access your photos.',
-        savePhotosPermission: 'Allow Expo Camera to save photos.',
-        isAccessMediaLocationEnabled: true,
-      },
-    ],
     'expo-font',
     'expo-secure-store',
   ],
