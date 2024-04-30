@@ -25,7 +25,7 @@ const BASE_DOMAIN = process.env.BASE_DOMAIN;
 
 export default {
   name: 'Expo Camera',
-  slug: 'expo-camera-rotated-video',
+  slug: 'expo-camera-rotated-videos',
   scheme: `expocamera${notProduction ? `-${ENVIRONMENT}` : ''}`,
   runtimeVersion: {
     policy: 'sdkVersion',
