@@ -75,7 +75,6 @@ export default {
       },
     ],
     'expo-font',
-    'expo-secure-store',
   ],
   extra: {
     eas: {
