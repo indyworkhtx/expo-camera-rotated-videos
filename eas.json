@@ -1,0 +1,58 @@
+{
+  "cli": {
+    "version": ">= 0.47.0"
+  },
+  "build": {
+    "dev": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "dev",
+      "cache": {
+        "key": "dev-expocam"
+      },
+      "env": {
+        "APP_VERSION": "v0.0.1-dev",
+        "ENVIRONMENT": "dev"
+      }
+    },
+    "staging-devclient": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "staging",
+      "cache": {
+        "key": "staging-expocam-1"
+      },
+      "ios": {
+        "resourceClass": "default"
+      },
+      "android": {
+        "resourceClass": "default"
+      },
+      "env": {
+        "APP_VERSION": "v0.0.1-staging",
+        "ENVIRONMENT": "staging"
+      }
+    },
+    "staging": {
+      "developmentClient": false,
+      "distribution": "internal",
+      "channel": "staging",
+      "cache": {
+        "key": "staging-expocam-130825"
+      },
+      "ios": {
+        "resourceClass": "default"
+      },
+      "android": {
+        "resourceClass": "default"
+      },
+      "env": {
+        "APP_VERSION": "v0.0.1-staging",
+        "ENVIRONMENT": "staging"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
