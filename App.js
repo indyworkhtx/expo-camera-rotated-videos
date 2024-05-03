@@ -6,169 +6,158 @@ import {
   SafeAreaView,
   StyleSheet,
   Dimensions,
+  Pressable,
+  Alert,
 } from "react-native";
-import { Camera } from "expo-camera";
+import { CameraView, useCameraPermissions } from "expo-camera/next";
 import { Video } from "expo-av";
-export default function CameraScreen() {
-  const [hasPermission, setHasPermission] = useState(null);
-  const [cameraType, setCameraType] = useState(Camera.Constants.Type.back);
-  const [isPreview, setIsPreview] = useState(false);
+
+export default CameraScreen = () => {
+  const [facing, setFacing] = useState("back");
+  const [permission, requestPermission] = useCameraPermissions();
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [isVideoRecording, setIsVideoRecording] = useState(false);
-  const [videoSource, setVideoSource] = useState(null);
+  const [videoSource, setVideoSource] = useState();
   const cameraRef = useRef();
-  useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestPermissionsAsync();
-      setHasPermission(status === "granted");
-    })();
-  }, []);
-  const onCameraReady = () => {
+
+  const toggleCameraFacing = () => {
+    setFacing((current) => (current === "back" ? "front" : "back"));
+  };
+  const onCameraReady = (test) => {
+    console.log("READY", test);
     setIsCameraReady(true);
   };
-  const takePicture = async () => {
-    if (cameraRef.current) {
-      const options = { quality: 0.5, base64: true, skipProcessing: true };
-      const data = await cameraRef.current.takePictureAsync(options);
-      const source = data.uri;
-      if (source) {
-        await cameraRef.current.pausePreview();
-        setIsPreview(true);
-        console.log("picture", source);
-      }
-    }
-  };
-  const recordVideo = async () => {
-    if (cameraRef.current) {
-      try {
-        const videoRecordPromise = cameraRef.current.recordAsync();
-        if (videoRecordPromise) {
-          setIsVideoRecording(true);
-          const data = await videoRecordPromise;
-          const source = data.uri;
-          if (source) {
-            setIsPreview(true);
-            console.log("video source", source);
-            setVideoSource(source);
-          }
-        }
-      } catch (error) {
-        console.warn(error);
-      }
-    }
-  };
-  const stopVideoRecording = () => {
-    if (cameraRef.current) {
-      setIsPreview(false);
-      setIsVideoRecording(false);
-      cameraRef.current.stopRecording();
-    }
-  };
-  const switchCamera = () => {
-    if (isPreview) {
-      return;
-    }
-    setCameraType((prevCameraType) =>
-      prevCameraType === Camera.Constants.Type.back
-        ? Camera.Constants.Type.front
-        : Camera.Constants.Type.back
-    );
-  };
-  const cancelPreview = async () => {
-    await cameraRef.current.resumePreview();
-    setIsPreview(false);
-    setVideoSource(null);
-  };
-  const renderCancelPreviewButton = () => (
-    <TouchableOpacity onPress={cancelPreview} style={styles.closeButton}>
-      <View style={[styles.closeCross, { transform: [{ rotate: "45deg" }] }]} />
-      <View
-        style={[styles.closeCross, { transform: [{ rotate: "-45deg" }] }]}
+
+  const renderCaptureControl = () => (
+    <View style={styles.control}>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        disabled={!isCameraReady}
+        onPress={!isVideoRecording ? recordVideo : stopVideoRecording}
+        //onLongPress={recordVideo}
+        //onPressOut={stopVideoRecording}
+        //onPress={takePicture}
+        style={[styles.capture, isVideoRecording && styles.recording]}
       />
-    </TouchableOpacity>
+    </View>
   );
-  const renderVideoPlayer = () => (
-    <Video
-      source={{ uri: videoSource }}
-      shouldPlay={true}
-      style={styles.media}
-    />
-  );
+
   const renderVideoRecordIndicator = () => (
     <View style={styles.recordIndicatorContainer}>
       <View style={styles.recordDot} />
       <Text style={styles.recordTitle}>{"Recording..."}</Text>
     </View>
   );
-  const renderCaptureControl = () => (
-    <View style={styles.control}>
-      <TouchableOpacity disabled={!isCameraReady} onPress={switchCamera}>
-        <Text style={styles.text}>{"Flip"}</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        activeOpacity={0.7}
-        disabled={!isCameraReady}
-        onLongPress={recordVideo}
-        onPressOut={stopVideoRecording}
-        onPress={takePicture}
-        style={styles.capture}
+
+  const renderVideoPlayer = () => (
+    <Pressable
+      style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+      onPress={cancelPreview}
+    >
+      <Video
+        source={{ uri: videoSource.uri }}
+        shouldPlay={true}
+        style={styles.media}
+        onError={(error) => console.log("video err", error)}
       />
-    </View>
+    </Pressable>
   );
-  if (hasPermission === null) {
+
+  const recordVideo = async () => {
+    if (cameraRef.current) {
+      try {
+        console.log("START");
+        setIsVideoRecording(true);
+        const data = await cameraRef.current.recordAsync({
+          maxDuration: 15,
+          //maxFileSize: 100000,
+        });
+
+        setVideoSource(data);
+      } catch (error) {
+        console.warn(error);
+      } finally {
+        setIsVideoRecording(false);
+      }
+    }
+  };
+
+  const stopVideoRecording = () => {
+    try {
+      if (cameraRef.current) {
+        setIsVideoRecording(false);
+        cameraRef.current.stopRecording();
+      }
+    } catch (err) {
+      console.log("ERR", err);
+    }
+  };
+
+  const cancelPreview = async () => {
+    //await cameraRef.current.resumePreview();
+    setVideoSource(null);
+  };
+
+  if (!permission) {
+    requestPermission();
     return <View />;
   }
-  if (hasPermission === false) {
-    return <Text style={styles.text}>No access to camera</Text>;
-  }
   return (
-    <SafeAreaView style={styles.container}>
-      <Camera
-        ref={cameraRef}
-        style={styles.container}
-        type={cameraType}
-        flashMode={Camera.Constants.FlashMode.on}
-        onCameraReady={onCameraReady}
-        onMountError={(error) => {
-          console.log("camera error", error);
-        }}
-      />
-      <View style={styles.container}>
-        {isVideoRecording && renderVideoRecordIndicator()}
-        {videoSource && renderVideoPlayer()}
-        {isPreview && renderCancelPreviewButton()}
-        {!videoSource && !isPreview && renderCaptureControl()}
-      </View>
-    </SafeAreaView>
+    <View style={styles.container}>
+      {permission.granted === false ? (
+        <Text style={styles.text}>No access to camera</Text>
+      ) : (
+        <>
+          <CameraView
+            style={styles.camera}
+            facing={facing}
+            ref={cameraRef}
+            onCameraReady={onCameraReady}
+            mute={true}
+            mode="video"
+            onMountError={(error) => {
+              console.log("camera error", error);
+            }}
+            responsiveOrientationWhenOrientationLocked={true}
+            onResponsiveOrientationChanged={Alert.alert("Orientation changed")}
+          >
+            {!videoSource && (
+              <View style={styles.buttonContainer}>
+                {isCameraReady && renderCaptureControl()}
+                {isVideoRecording && renderVideoRecordIndicator()}
+              </View>
+            )}
+            {videoSource && renderVideoPlayer()}
+          </CameraView>
+        </>
+      )}
+    </View>
   );
-}
-const WINDOW_HEIGHT = Dimensions.get("window").height;
-const closeButtonSize = Math.floor(WINDOW_HEIGHT * 0.032);
-const captureSize = Math.floor(WINDOW_HEIGHT * 0.09);
+};
+
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  closeButton: {
-    position: "absolute",
-    top: 35,
-    left: 15,
-    height: closeButtonSize,
-    width: closeButtonSize,
-    borderRadius: Math.floor(closeButtonSize / 2),
+    flex: 1,
     justifyContent: "center",
+  },
+  camera: {
+    flex: 1,
+  },
+  buttonContainer: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "transparent",
+    margin: 64,
+  },
+  button: {
+    flex: 1,
+    alignSelf: "flex-end",
     alignItems: "center",
-    backgroundColor: "#c4c5c4",
-    opacity: 0.7,
-    zIndex: 2,
   },
-  media: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  closeCross: {
-    width: "68%",
-    height: 1,
-    backgroundColor: "black",
+  text: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "white",
   },
   control: {
     position: "absolute",
@@ -181,10 +170,13 @@ const styles = StyleSheet.create({
   capture: {
     backgroundColor: "#f5f6f5",
     borderRadius: 5,
-    height: captureSize,
-    width: captureSize,
-    borderRadius: Math.floor(captureSize / 2),
+    height: 100,
+    width: 100,
+    borderRadius: Math.floor(100 / 2),
     marginHorizontal: 31,
+  },
+  recording: {
+    backgroundColor: "red",
   },
   recordIndicatorContainer: {
     flexDirection: "row",
@@ -208,7 +200,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#ff0000",
     marginHorizontal: 5,
   },
-  text: {
-    color: "#fff",
+  media: {
+    width: "100%",
+    height: "50%",
   },
 });
